@@ -1,4 +1,34 @@
 # Gradual Typing
+## Experiment Design
+### Test Minimization
+- Mutation Testing
+  - Computationally expensive
+  - Potentially use population subset
+- Statement Coverage
+  - Makes mutation testing redundant
+  - Makes semantics indistinguishable
+  - Need strategy for removing tests
+### Lattice Traversal
+- Preferred Strategies
+  - Greedy
+    - Calculate test minimization for every possible next step
+    - Choose smallest test suite
+    - Computationally expensive
+  - Combination
+    - Use alternate strategy to pick top two/three
+    - Use greedy algorithm to pick best
+- Alternate Strategies
+  - Performance (Profiling)
+  - Random
+  - Complexity (Size of Modules/Tests)
+  	- Smaller Modules for Ease
+  	- Bigger Modules for Coverage
+  	- Methods (Counting)
+  		- Lines
+  		- Symbolic Expressions
+  		- Top-Level Definitions
+  		- References to Other Modules
+  		- External References
 ## Literature Review
 ### Background
 - [Migratory Typing: Ten Years Later](https://www2.ccs.neu.edu/racket/pubs/typed-racket.pdf)
