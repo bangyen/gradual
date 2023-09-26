@@ -1,4 +1,26 @@
 # Gradual Typing
+Research Question: Does gradual typing help developers test their code?
+- Alternative RQ: Do different type enforcement strategies reduce the effort needed to unit test a program?
+- Definitions
+  - **Gradual Typing**: Combination of static type system, dynamic type enforcement, and untyped programming language (syntax and semantics)
+    - Typed Racket type system (very close to TypeScript)
+      - Fix types
+    - Racket
+      - Fix benchmarks
+    - Natural vs. Transient vs. Erasure
+  - **Test**: Unit testing
+    - All modules and all units (functions, classes, etc.)
+      - Except fake modules
+    - Integration testing?
+    - System-wide testing?
+    - Uniform tests because it's otherwise difficult to compare number of tests and size of tests (in terms of which criterion is better)
+    - Unit testing should kill all mutants
+  - **Help**: Reduce effort
+  - **Code**: TR/R (Typed Racket / Racket) programs (GTP)
+- If statement coverage is used for test minimization, the different mutation score graphs (along the lattice) illustrate whether statement coverage can be used with a specific semantic
+- Test minimization options
+  - Remove tests until the mutation score drops
+  - Remove tests until criterion-based threshold
 ## Experiment Design
 ### Test Minimization
 - Mutation Testing
