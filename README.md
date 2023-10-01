@@ -21,6 +21,23 @@ Research Question: Does gradual typing help developers test their code?
 - Test minimization options
   - Remove tests until the mutation score drops
   - Remove tests until criterion-based threshold
+## To-Do List
+### Top-Down Implementation
+- Map from Configurations to Mutation Score
+  - Adding to Struct in `mutant-factory-data.rkt`
+- How to Remove Tests
+- How to Add Types
+  - Separate File?
+  - Configurable for program instrumentation
+    - `program-instrumentation/instrument-modules-and-insert-interface-adapter-module.rkt`
+  - Mutant Factory
+- When to Enqueue Additional Tests
+  - Mutant Factory
+### Blame Following Parameterization
+- Add Additional Parameters to Blame Following Function
+  - Configurable for blame following
+  - `blame-following-common.rkt`
+- Note: Abstract Info Produced by Mutants (List/Struct of Arguments?)
 ## Experiment Design
 ### Test Minimization
 - Mutation Testing
