@@ -16,31 +16,25 @@
 
                 (values num data)))
 
-(define (pick mat val)
-    (define (comb data)
-        (cond [(empty? data) '()]
-              [else (define rest
-                            (comb (cdr data)))
-                    (if (= (caar data) val)
-                        (cons (car data) rest)
-                        rest)]))
+(define (split mat pred [ir? #f])
+    (define data  (matrix-data mat))
+    (define len   (matrix-num  mat))
 
-    (comb (matrix-data mat)))
+    (define true  (filter     pred data))
+    (define false (filter-not pred data))
+
+    (values (if ir? true  (matrix len true))
+            (if ir? false (matrix len false))))
 
 (define (redundant mat)
-    (define data
-            (matrix-data mat))
-
-    (define (check vec)
+    (lambda (vec)
         (ormap (lambda (v)
                        (if (>= (car v) (car vec))
                            (bveq (bvor (cdr v)
                                        (cdr vec))
                                  (cdr v))
                            #f))
-               data))
-
-    (filter-not check data))
+               (matrix-data mat))))
 
 (define (essential mat num)
     (define len  (matrix-num  mat))
@@ -58,12 +52,16 @@
                0
                data))
 
-    (foldl (lambda (v res)
-                   (if (= (count v) num)
-                       (bvor v res)
-                       res))
-           (bv 0 len)
-           pow))
+    (define criteria
+        (foldl (lambda (v res)
+                       (if (= (count v) num)
+                           (bvor v res)
+                           res))
+               (bv 0 len)
+               pow))
+
+    (lambda (v)
+            (not (bvzero? (bvand v criteria)))))
 
 (define (adequate new old)
     (define (all mat)
