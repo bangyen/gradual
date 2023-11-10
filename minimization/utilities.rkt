@@ -26,7 +26,7 @@
     (values (if ir? true  (matrix len true))
             (if ir? false (matrix len false))))
 
-(define (redundant mat)
+(define (redundant? mat)
     (lambda (vec)
         (ormap (lambda (v)
                        (if (>= (car v) (car vec))
@@ -36,7 +36,7 @@
                            #f))
                (matrix-data mat))))
 
-(define (essential mat num)
+(define (essential? mat num)
     (define len  (matrix-num  mat))
     (define data (matrix-data mat))
 
@@ -63,7 +63,7 @@
     (lambda (v)
             (not (bvzero? (bvand v criteria)))))
 
-(define (adequate new old)
+(define (adequate? new old)
     (define (all mat)
         (bvor (map cdr
                    (matrix-data mat))))
