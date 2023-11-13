@@ -23,19 +23,25 @@
         (choice value new old)
         chc)
 
-    (match-define
-        (split in1 out1 len)
-        value)
+    (define (inner spl val)
+        (match-define
+            (split in out len)
+            spl)
 
-    (case (bveq new old)
-        [(#f) (match-define (cons first rest) out1)
-              (define  in2  (cons first in1))
-              (define out2  rest)
-              (incr (choice (split in2 out2 len)
-                            (bvor (cdr first)
-                                  new)
-                            old))]
-        [(#t) chc]))
+        (case (bveq val old)
+            [(#f)
+             (match-define (cons fst rst)
+                           out)
+             (inner (split (cons fst in)
+                           rst
+                           len)
+                    (bvor  (cdr  fst)
+                           val))]
+            [(#t) spl]))
+
+    (choice (inner value new)
+            old
+            old))
 
 (define/contract (fold proc init [n 0])
     (->* ((-> natural? choice? choice?)
