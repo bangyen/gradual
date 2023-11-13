@@ -13,13 +13,9 @@
                  (len natural?))]
         [scar   (-> split? matrix?)]
         [scdr   (-> split? matrix?)]
-        [divide (->i ([pred (-> row? boolean?)]
-                      [mat  (or/c matrix? data?)])
-                     ([num  (mat)
-                            (if (matrix? mat)
-                                false?
-                                natural?)])
-                     [result split?])]
+        [divide (-> (-> row? boolean?)
+                    matrix?
+                    split?)]
         [collect    (-> matrix? bv?)]
         [redundant? (-> matrix?
                         (-> row? boolean?))]
@@ -79,18 +75,9 @@
                (map cdr
                     data))))
 
-(define (divide pred mat [num #f])
-    (define bool (matrix? mat))
-
-    (define data
-        (if bool
-            (matrix-data mat)
-            mat))
-
-    (define len
-        (if bool
-            (matrix-len mat)
-            num))
+(define (divide pred mat)
+    (define data (matrix-data mat))
+    (define len  (matrix-len  mat))
 
     (define true  (filter     pred data))
     (define false (filter-not pred data))
