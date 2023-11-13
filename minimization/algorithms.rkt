@@ -75,8 +75,8 @@
              (match-define
                  (split in2 out2 _l2)
                  (divide (proc n)
-                         out1
-                         len))
+                         (matrix out1
+                                 len)))
 
              (define comb (append in2 in1))
              (define new  (matrix comb len))
