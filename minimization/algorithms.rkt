@@ -55,22 +55,22 @@
         (match res
             [(choice value new old)
              (match-define
-                 (split in out __)
+                 (split in1 out1 _l1)
                  value)
 
              (match-define
-                 (split t f _)
+                 (split in2 out2 _l2)
                  (divide (proc n)
-                         out
+                         out1
                          len))
 
-             (define comb (append t in))
+             (define comb (append in2 in1))
              (define new  (matrix comb len))
              (define alt  (collect new))
 
-             (choice (if (bveq alt col)
-                         (incr t in mat)
-                         (split comb f len))
+             (choice (if (bveq  alt  col)
+                         (incr  in2  in1  mat)
+                         (split comb out2 len))
                      alt col)]
             [else res]))
 
