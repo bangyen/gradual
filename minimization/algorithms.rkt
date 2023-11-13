@@ -17,17 +17,25 @@
 
                 (values value new old)))
 
-(define/contract (incr next res mat)
-    (-> data? data? matrix? split?)
-    (define len (matrix-len mat))
-    (define old (matrix res len))
+(define/contract (incr chc)
+    (-> choice? choice?)
+    (match-define
+        (choice value new old)
+        chc)
 
-    (case (adequate? old mat)
-        [(#f) (incr (cdr next)
-                    (cons (car next)
-                          res)
-                    mat)]
-        [(#t) (split res next len)]))
+    (match-define
+        (split in1 out1 len)
+        value)
+
+    (case (bveq new old)
+        [(#f) (match-define (cons first rest) out1)
+              (define  in2  (cons first in1))
+              (define out2  rest)
+              (incr (choice (split in2 out2 len)
+                            (bvor (cdr first)
+                                  new)
+                            old))]
+        [(#t) chc]))
 
 (define/contract (fold proc init [n 0])
     (->* ((-> natural? choice? choice?)
@@ -68,10 +76,16 @@
              (define new  (matrix comb len))
              (define alt  (collect new))
 
-             (choice (if (bveq  alt  col)
-                         (incr  in2  in1  mat)
-                         (split comb out2 len))
-                     alt col)]
+             (if (bveq alt col)
+                 (incr (choice (split in1
+                                      in2
+                                      len)
+                               (collect (matrix in1
+                                                len))
+                               col))
+                 (choice (split comb out2 len)
+                         alt
+                         col))]
             [else res]))
 
     (fold update
