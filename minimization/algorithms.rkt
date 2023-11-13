@@ -15,16 +15,16 @@
 
                 (values value done)))
 
-(define/contract (increment next res mat)
+(define/contract (incr next res mat)
     (-> data? data? matrix? split?)
     (define len (matrix-len mat))
     (define old (matrix res len))
 
     (case (adequate? old mat)
-        [(#f) (increment (cdr next)
-                         (cons (car next)
-                               res)
-                         mat)]
+        [(#f) (incr (cdr next)
+                    (cons (car next)
+                          res)
+                    mat)]
         [(#t) (split res next len)]))
 
 (define/contract (fold proc init [n 0])
@@ -54,22 +54,21 @@
                  (split in out __)
                  value)
 
-             (define next
+             (match-define
+                 (split t f _)
                  (divide (proc n)
                          out
                          len))
 
-             (match-let ([(split t f _) next])
-                 (define comb (append t in))
-                 (define new  (matrix comb len))
+             (define comb (append t in))
+             (define new  (matrix comb len))
 
-                 (if (adequate? new mat)
-                     (let ([spl (increment t
-                                           in
-                                           mat)])
-                         (choice spl #t))
-                     (choice (split comb f len)
-                             #f)))]
+             (case (adequate? new mat)
+                 [(#t) (define spl
+                           (incr t in mat))
+                       (choice spl #t)]
+                 [(#f) (choice (split comb f len)
+                               #f)])]
             [else res]))
 
     (fold update
@@ -80,17 +79,17 @@
               #f)))
 
 (define (greedy mat)
-    (define sizes
-        (sort
-            (remove-duplicates
-                (map car (matrix-data mat)))
-            >))
+    (define data (matrix-data mat))
+    (define bits (map car data))
+    (define bset (remove-duplicates bits))
 
-    (define proc
-        (lambda (num)
-                (lambda (vec)
-                        (= (car vec)
-                           (list-ref sizes
-                                     num)))))
+    (define (proc num)
+        (define (count vec)
+            (= (car vec)
+               (list-ref
+                   (sort bset >)
+                   num)))
+
+        count)
 
     (recurse mat proc))
