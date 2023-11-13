@@ -20,6 +20,7 @@
                                 false?
                                 natural?)])
                      [result split?])]
+        [collect    (-> matrix? bv?)]
         [redundant? (-> matrix?
                         (-> row? boolean?))]
         [essential? (-> matrix?
@@ -67,6 +68,16 @@
 (define (scdr spl)
     (matrix (split-out spl)
             (split-len spl)))
+
+(define (collect mat)
+    (define data (matrix-data mat))
+    (define len  (matrix-len  mat))
+
+    (if (null? data)
+        (bv 0 len)
+        (apply bvor
+               (map cdr
+                    data))))
 
 (define (divide pred mat [num #f])
     (define bool (matrix? mat))
@@ -140,14 +151,5 @@
     pred)
 
 (define (adequate? new old)
-    (define (all mat)
-        (define data (matrix-data mat))
-        (define len  (matrix-len  old))
-
-        (apply bvor
-               (cons (bv 0 len)
-                     (map cdr
-                          data))))
-
-    (bveq (all new)
-          (all old)))
+    (bveq (collect new)
+          (collect old)))
