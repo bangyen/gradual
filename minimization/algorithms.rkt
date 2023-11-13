@@ -6,14 +6,16 @@
     (contract-out
         [greedy (-> matrix? split?)]))
 
-(struct choice (value done)
-    #:guard (lambda (value done name)
+(struct choice (value new old)
+    #:guard (lambda (value new old name)
                 (unless (split? value)
                     (error "invalid split"))
-                (unless (boolean? done)
-                    (error "invalid condition"))
+                (unless (bv? new)
+                    (error "invalid new bv"))
+                (unless (bv? old)
+                    (error "invalid old bv"))
 
-                (values value done)))
+                (values value new old)))
 
 (define/contract (incr next res mat)
     (-> data? data? matrix? split?)
@@ -32,7 +34,8 @@
           choice?)
          ()
          split?)
-    (if (choice-done  init)
+    (if (bveq (choice-new init)
+              (choice-old init))
         (choice-value init)
         (fold proc
               (proc n init)
@@ -46,10 +49,11 @@
         split?)
     (define data (matrix-data mat))
     (define len  (matrix-len  mat))
+    (define col  (collect     mat))
 
     (define (update n res)
         (match res
-            [(choice value done)
+            [(choice value new old)
              (match-define
                  (split in out __)
                  value)
@@ -62,13 +66,12 @@
 
              (define comb (append t in))
              (define new  (matrix comb len))
+             (define alt  (collect new))
 
-             (case (adequate? new mat)
-                 [(#t) (define spl
-                           (incr t in mat))
-                       (choice spl #t)]
-                 [(#f) (choice (split comb f len)
-                               #f)])]
+             (choice (if (bveq alt col)
+                         (incr t in mat)
+                         (split comb f len))
+                     alt col)]
             [else res]))
 
     (fold update
@@ -76,7 +79,8 @@
               (split '()
                      data
                      len)
-              #f)))
+              (bv 0 len)
+              col)))
 
 (define (greedy mat)
     (define data (matrix-data mat))
