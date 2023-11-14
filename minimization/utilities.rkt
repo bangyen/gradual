@@ -19,15 +19,13 @@
         [collect    (-> matrix? bv?)]
         [redundant? (-> matrix?
                         (-> row? boolean?))]
-        [essential? (-> matrix?
-                        natural?
-                        (-> row? boolean?))]
         [adequate?  (-> matrix?
                         matrix?
                         boolean?)]))
 
 (define row?  (cons/c natural? bv?))
 (define data? (listof row?))
+
 
 (define/contract (valid? len)
     (-> natural? contract?)
@@ -37,6 +35,7 @@
                    (<=/c len))
             (bitvector len))))
 
+
 (struct matrix (data len)
     #:guard (lambda (data len name)
                 (unless (natural? len)
@@ -45,6 +44,7 @@
                     (error "invalid data"))
 
                 (values data len)))
+
 
 (struct split (in out len)
     #:guard (lambda (in out len name)
@@ -57,23 +57,16 @@
 
                 (values in out len)))
 
+
 (define (scar spl)
     (matrix (split-in  spl)
             (split-len spl)))
+
 
 (define (scdr spl)
     (matrix (split-out spl)
             (split-len spl)))
 
-(define (collect mat)
-    (define data (matrix-data mat))
-    (define len  (matrix-len  mat))
-
-    (if (null? data)
-        (bv 0 len)
-        (apply bvor
-               (map cdr
-                    data))))
 
 (define (divide pred mat)
     (define data (matrix-data mat))
@@ -84,14 +77,18 @@
 
     (split true false len))
 
+
 (define (redundant? mat)
+    (define (sub vec v)
+        (and (>= (car v) (car vec))
+             (bveq (bvor (cdr v)
+                         (cdr vec))
+                   (cdr v))))
+
     (define (pred vec)
         (define (count v res)
             (if (and (< res 2)
-                     (>= (car v) (car vec))
-                     (bveq (bvor (cdr v)
-                                 (cdr vec))
-                           (cdr v)))
+                     (sub vec v))
                 (add1 res)
                 res))
 
@@ -102,40 +99,17 @@
 
     pred)
 
-(define (essential? mat num)
+
+(define (collect mat)
     (define data (matrix-data mat))
     (define len  (matrix-len  mat))
+    (define vecs (map cdr data))
 
-    (define (shift n)
-        (bvshl (bv 1 len)
-               (bv n len)))
+    (if (null? vecs)
+        (bv 0 len)
+        (apply bvor
+               vecs)))
 
-    (define (count v2)
-        (define (diff v1 res)
-            (if (bvzero? (bvand v1 v2))
-                res (add1 res)))
-
-        (foldl diff 0
-               (map cdr data)))
-
-    (define (build v res)
-        (if (= (count v) num)
-            (bvor v res) res))
-
-    (define (pred v)
-        (define val
-            (bvand (cdr v)
-                   criteria))
-
-        (not (bvzero? val)))
-
-    (define criteria
-        (foldl build
-               (bv 0 len)
-               (build-list len
-                           shift)))
-
-    pred)
 
 (define (adequate? new old)
     (bveq (collect new)

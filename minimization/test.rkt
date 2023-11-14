@@ -2,6 +2,7 @@
 
 (require "utilities.rkt"
          "algorithms.rkt"
+         "essential.rkt"
          rackunit)
 
 (define/contract (matrix-eq? m1 m2)
@@ -24,12 +25,14 @@
                 data2)
         #f))
 
+
 (define/contract (count num)
     (-> natural? natural?)
-    (let*-values ([(q/r) quotient/remainder] 
+    (let*-values ([(q/r) quotient/remainder]
                   [(q r) (q/r num 2)])
         (if (zero? num)
             0 (+ (count q) r))))
+
 
 (define/contract (generate len . data)
     (->* (natural?) ()
@@ -41,6 +44,7 @@
 
     (matrix (map row data)
             len))
+
 
 (define/contract (gen . data)
     (->* () ()
@@ -64,6 +68,7 @@
     (check-true (matrix-eq? m2 one))
     (check-true (matrix-eq? m3 one)))
 
+
 (test-case
     "redundant?/divide tests"
     (define mat  (gen   #b11 #b01))
@@ -77,6 +82,7 @@
     (check-true (matrix-eq? (scar spl) (gen #b01)))
     (check-true (matrix-eq? (scdr spl) (gen #b11))))
 
+
 (test-case
     "essential? tests"
     (define mat  (gen #b11 #b01))
@@ -85,6 +91,7 @@
 
     (check-true  (pred (car   data)))
     (check-false (pred (cadr  data))))
+
 
 (test-case
     "adequate? tests"
