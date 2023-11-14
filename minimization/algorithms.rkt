@@ -17,6 +17,7 @@
 
                 (values value new old)))
 
+
 (define/contract (incr chc)
     (-> choice? choice?)
     (match-define
@@ -30,21 +31,19 @@
 
         (case (bveq val old)
             [(#f)
-             (match-define (cons fst rst)
-                           out)
-             (inner (split (cons fst in)
-                           rst
-                           len)
-                    (bvor  (cdr  fst)
-                           val))]
+             (match-define (cons fst rst) out)
+             (inner (split (cons fst  in) rst len)
+                    (bvor  (cdr  fst    ) val))]
             [(#t) spl]))
 
     (choice (inner value new)
-            old
-            old))
+            old old))
+
 
 (define/contract (fold proc init [n 0])
-    (->* ((-> natural? choice? choice?)
+    (->* ((-> natural?
+              choice?
+              choice?)
           choice?)
          ()
          split?)
@@ -54,6 +53,36 @@
         (fold proc
               (proc n init)
               (add1 n))))
+
+
+(define (update n res)
+    (match res
+        [(choice value new old)
+         (match-define
+             (split in1 out1 len)
+             value)
+
+         (match-define
+             (split in2 out2 ___)
+             (divide (proc n)
+                     (matrix out1
+                             len)))
+
+         (define alt (matrix in2 len))
+         (define vec (collect alt))
+         (define cmb (bvor vec new))
+
+         (if (bveq cmb old)
+             (incr (choice (split in1
+                                  in2
+                                  len)
+                           new old))
+             (choice (split (append in2 in1)
+                            out2 len)
+                     cmb
+                     old))]
+        [else res]))
+
 
 (define/contract (recurse mat proc)
     (-> matrix?
@@ -65,35 +94,6 @@
     (define len  (matrix-len  mat))
     (define col  (collect     mat))
 
-    (define (update n res)
-        (match res
-            [(choice value new old)
-             (match-define
-                 (split in1 out1 _l1)
-                 value)
-
-             (match-define
-                 (split in2 out2 _l2)
-                 (divide (proc n)
-                         (matrix out1
-                                 len)))
-
-             (define comb (append in2 in1))
-             (define new  (matrix comb len))
-             (define alt  (collect new))
-
-             (if (bveq alt col)
-                 (incr (choice (split in1
-                                      in2
-                                      len)
-                               (collect (matrix in1
-                                                len))
-                               col))
-                 (choice (split comb out2 len)
-                         alt
-                         col))]
-            [else res]))
-
     (fold update
           (choice
               (split '()
@@ -101,6 +101,7 @@
                      len)
               (bv 0 len)
               col)))
+
 
 (define (greedy mat)
     (define data (matrix-data mat))
