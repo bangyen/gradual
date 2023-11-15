@@ -59,7 +59,13 @@
               (add1 n))))
 
 
-(define (update proc)
+(define/contract (update proc)
+    (-> (-> natural?
+            (-> row?
+                boolean?))
+        (-> natural?
+            choice?
+            choice?))
     (define (inner n res)
         (match res
             [(choice value new old)
