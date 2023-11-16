@@ -2,11 +2,16 @@
 
 (require "utilities.rkt")
 
-[provide
+(provide
     (contract-out
         [essential? (-> matrix?
                         natural?
-                        (-> row? boolean?))])]
+                        (-> row? boolean?))]
+        [redundant? (-> matrix?
+                        (-> row? boolean?))]
+        [adequate?  (-> matrix?
+                        matrix?
+                        boolean?)]))
 
 (define/contract (pow len)
     (-> natural?
@@ -53,3 +58,30 @@
         (not (bvzero? val)))
 
     pred)
+
+
+(define (redundant? mat)
+    (define (sub vec v)
+        (and (>= (car v) (car vec))
+             (bveq (bvor (cdr v)
+                         (cdr vec))
+                   (cdr v))))
+
+    (define (pred vec)
+        (define (count v res)
+            (if (and (< res 2)
+                     (sub vec v))
+                (add1 res)
+                res))
+
+        (define data (matrix-data mat))
+        (define num  (foldl count 0 data))
+
+        (> num 1))
+
+    pred)
+
+
+(define (adequate? new old)
+    (bveq (collect new)
+          (collect old)))

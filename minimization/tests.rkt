@@ -1,8 +1,8 @@
 #lang rosette
 
-(require "utilities.rkt"
-         "algorithms.rkt"
-         "essential.rkt"
+(require "utils/utilities.rkt"
+         "utils/predicates.rkt"
+         "algs/algorithms.rkt"
          rackunit)
 
 (define/contract (matrix-eq? m1 m2)
@@ -24,14 +24,6 @@
                 data1
                 data2)
         #f))
-
-
-(define/contract (count num)
-    (-> natural? natural?)
-    (let*-values ([(q/r) quotient/remainder]
-                  [(q r) (q/r num 2)])
-        (if (zero? num)
-            0 (+ (count q) r))))
 
 
 (define/contract (generate len . data)
