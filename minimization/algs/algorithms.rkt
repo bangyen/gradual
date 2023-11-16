@@ -1,24 +1,32 @@
 #lang rosette
 
-(require "utilities.rkt"
+(require "../utils/utilities.rkt"
          "recurse.rkt")
 
 (provide
     (contract-out
         [greedy (-> matrix? split?)]))
 
+(define (mask row vec)
+    (define num
+        (bitvector->natural
+            (bvand (bvnot vec)
+                   (cdr   row))))
+
+    (count num))
+
 (define (greedy mat)
-    (define data (matrix-data mat))
-    (define bits (map car data))
-    (define bset (remove-duplicates bits))
+    (define (proc data vec)
+        (define (comp row res)
+            (max (mask row vec)
+                 res))
+`
+        (define (pred row)
+            (= (car row)
+               (foldl comp
+                      0
+                      data)))
 
-    (define (proc num)
-        (define (count vec)
-            (= (car vec)
-               (list-ref
-                   (sort bset >)
-                   num)))
-
-        count)
+        pred)
 
     (recurse mat proc))

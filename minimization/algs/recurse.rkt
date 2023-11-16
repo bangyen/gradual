@@ -1,11 +1,12 @@
 #lang rosette
 
-(require "utilities.rkt")
+(require "../utils/utilities.rkt")
 
 (provide
     (contract-out
         [recurse (-> matrix?
-                     (-> natural?
+                     (-> data?
+                         bv?
                          (-> row?
                              boolean?))
                      split?)]))
@@ -60,7 +61,8 @@
 
 
 (define/contract (update proc)
-    (-> (-> natural?
+    (-> (-> data?
+            bv?
             (-> row?
                 boolean?))
         (-> natural?
@@ -75,7 +77,7 @@
 
              (match-define
                  (split in2 out2 _)
-                 (divide (proc n)
+                 (divide (proc out1 new)
                          (matrix out1
                                  len)))
 
