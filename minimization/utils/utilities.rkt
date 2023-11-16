@@ -2,26 +2,23 @@
 
 (provide
     (contract-out
-        [row?   contract?]
-        [data?  contract?]
-        [struct matrix
-                ((data data?)
-                 (len  natural?))]
-        [struct split
-                ((in  data?)
-                 (out data?)
-                 (len natural?))]
-        [scar   (-> split? matrix?)]
-        [scdr   (-> split? matrix?)]
-        [divide (-> (-> row? boolean?)
+        [row?    contract?]
+        [data?   contract?]
+        [struct  matrix
+                 ((data data?)
+                  (len  natural?))]
+        [struct  split
+                 ((in  data?)
+                  (out data?)
+                  (len natural?))]
+        [scar    (-> split? matrix?)]
+        [scdr    (-> split? matrix?)]
+        [divide  (-> (-> row? boolean?)
                     matrix?
                     split?)]
-        [collect    (-> matrix? bv?)]
-        [redundant? (-> matrix?
-                        (-> row? boolean?))]
-        [adequate?  (-> matrix?
-                        matrix?
-                        boolean?)]))
+        [count   (-> natural?
+                     natural?)]
+        [collect (-> matrix? bv?)]))
 
 (define row?  (cons/c natural? bv?))
 (define data? (listof row?))
@@ -78,28 +75,6 @@
     (split true false len))
 
 
-(define (redundant? mat)
-    (define (sub vec v)
-        (and (>= (car v) (car vec))
-             (bveq (bvor (cdr v)
-                         (cdr vec))
-                   (cdr v))))
-
-    (define (pred vec)
-        (define (count v res)
-            (if (and (< res 2)
-                     (sub vec v))
-                (add1 res)
-                res))
-
-        (define data (matrix-data mat))
-        (define num  (foldl count 0 data))
-
-        (> num 1))
-
-    pred)
-
-
 (define (collect mat)
     (define data (matrix-data mat))
     (define len  (matrix-len  mat))
@@ -111,6 +86,8 @@
                vecs)))
 
 
-(define (adequate? new old)
-    (bveq (collect new)
-          (collect old)))
+(define (count num)
+    (let*-values ([(q/r) quotient/remainder]
+                  [(q r) (q/r num 2)])
+        (if (zero? num)
+            0 (+ (count q) r))))
