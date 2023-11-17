@@ -18,6 +18,8 @@
                     split?)]
         [count   (-> natural?
                      natural?)]
+        [pow     (-> natural?
+                     (listof bv?))]
         [collect (-> matrix? bv?)]))
 
 (define row?  (cons/c natural? bv?))
@@ -91,3 +93,11 @@
                   [(q r) (q/r num 2)])
         (if (zero? num)
             0 (+ (count q) r))))
+
+
+(define (pow len)
+    (define (shift n)
+        (bvshl (bv 1 len)
+               (bv n len)))
+
+    (build-list len shift))

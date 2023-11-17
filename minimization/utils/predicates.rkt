@@ -13,14 +13,15 @@
                         matrix?
                         boolean?)]))
 
-(define/contract (pow len)
-    (-> natural?
-        (listof bv?))
-    (define (shift n)
-        (bvshl (bv 1 len)
-               (bv n len)))
+(define/contract (count data vec)
+    (-> data? bv?
+        natural?)
+    (define (diff v res)
+        (if (bvzero? (bvand vec v))
+            res (add1 res)))
 
-    (build-list len shift))
+    (foldl diff 0
+           (map cdr data)))
 
 
 (define/contract (select mat num)
@@ -29,17 +30,10 @@
         bv?)
     (define data (matrix-data mat))
     (define len  (matrix-len  mat))
-    (define vecs (map cdr data))
-
-    (define (count v2)
-        (define (diff v1 res)
-            (if (bvzero? (bvand v1 v2))
-                res (add1 res)))
-
-        (foldl diff 0 vecs))
 
     (define (build v res)
-        (if (= (count v) num)
+        (if (= (count data v)
+               num)
             (bvor v res)
             res))
 
