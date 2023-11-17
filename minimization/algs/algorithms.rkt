@@ -1,13 +1,25 @@
 #lang rosette
 
 (require "../utils/utilities.rkt"
+         "../utils/predicates.rkt"
          "recurse.rkt")
 
 (provide
     (contract-out
         [greedy (-> matrix? split?)]))
 
-(define (mask row vec)
+(define-syntax-rule
+    (pred-select expr ...)
+    (quasisyntax
+        (let ([proc
+               (lambda
+                   (data vec)
+                   expr ...)])
+            (recurse mat proc))))
+
+(define/contract (mask row vec)
+    (-> row? bv?
+        natural?)
     (define num
         (bitvector->natural
             (bvand (bvnot vec)
@@ -15,18 +27,60 @@
 
     (count num))
 
+
+(define/contract (highest data vec)
+    (-> data? bv?
+        (-> row?
+            boolean?))
+    (define (comp row res)
+        (max (mask row vec)
+             res))
+
+    (define (pred row)
+        (= (mask row vec)
+           (foldl comp
+                  0
+                  data)))
+
+    pred)
+
+
 (define (greedy mat)
-    (define (proc data vec)
-        (define (comp row res)
-            (max (mask row vec)
+    (recurse mat highest))
+
+
+(define (ge mat)
+    (pred-select
+        (if (bvzero? vec)
+            (essential? mat 1)
+            (highest data vec))))
+
+
+(define (gre mat)
+    (define new
+        (scar
+            (divide
+                (redundant?
+                    mat)
+                mat)))
+
+    (pred-select
+        (if (bvzero? vec)
+            (essential? mat 1)
+            (highest data vec))))
+
+
+(define (hgs mat)
+    (define len
+        (matrix-len mat))
+
+    (pred-select
+        (define (lowest v res)
+            (min (count data v)
                  res))
-`
-        (define (pred row)
-            (= (car row)
-               (foldl comp
-                      0
-                      data)))
 
-        pred)
+        (define bot
+            (foldl lowest 0
+                   (pow len)))
 
-    (recurse mat proc))
+        (essential? mat bot)))
