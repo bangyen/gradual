@@ -11,10 +11,10 @@
 (define-syntax-rule
     (pred-select expr ...)
     (quasisyntax
-        (let ([proc
-               (lambda
-                   (data vec)
-                   expr ...)])
+        (begin
+            (define
+                (proc data vec)
+                expr ...)
             (recurse mat proc))))
 
 (define/contract (mask row vec)
