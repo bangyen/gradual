@@ -12,7 +12,7 @@
                      split?)]))
 
 (struct choice (value new old)
-    #:guard (lambda (value new old name)
+    #:guard (λ (value new old name)
                 (unless (split? value)
                     (error "invalid split"))
                 (unless (bv? new)

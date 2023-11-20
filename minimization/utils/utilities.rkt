@@ -36,7 +36,7 @@
 
 
 (struct matrix (data len)
-    #:guard (lambda (data len name)
+    #:guard (λ (data len name)
                 (unless (natural? len)
                     (error "invalid width"))
                 (unless ((valid? len) data)
@@ -46,7 +46,7 @@
 
 
 (struct split (in out len)
-    #:guard (lambda (in out len name)
+    #:guard (λ (in out len name)
                 (unless (natural? len)
                     (error "invalid width"))
                 (unless ((valid? len) in)
