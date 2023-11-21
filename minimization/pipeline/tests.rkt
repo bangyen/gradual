@@ -2,7 +2,8 @@
 
 (require "mutate.rkt"
          mutate/mutators/code
-         mutate)
+         mutate
+         rackunit)
 
 (define engine
     (build-mutation-engine
@@ -25,4 +26,5 @@
         #'(check-eq? (fact 3)  6)
         #'(check-eq? (fact 4) 24)))
 
-(pipeline engine program tests)
+(pretty-print
+    (pipeline engine program tests))
