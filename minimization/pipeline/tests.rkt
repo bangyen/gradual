@@ -27,4 +27,6 @@
         #'(check-eq? (fact 4) 24)))
 
 (pretty-print
-    (pipeline engine program tests))
+    (pipeline
+        (engine program)
+        tests))
