@@ -14,7 +14,7 @@
         (match-define (cons n1 v1) r1)
         (match-define (cons n2 v2) r2)
 
-        (and (= n1 n2)
+        (and (eq? n1 n2)
              (bveq v1 v2)))
 
     (if (and (= len1 len2)
@@ -31,7 +31,7 @@
          #:rest (listof natural?)
          matrix?)
     (define (row num)
-        (cons (count num)
+        (cons #'()
               (bv num len)))
 
     (matrix (map row data)
