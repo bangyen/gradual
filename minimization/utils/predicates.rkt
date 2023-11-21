@@ -56,10 +56,10 @@
 
 (define (redundant? mat)
     (define (sub vec v)
-        (and (>= (car v) (car vec))
-             (bveq (bvor (cdr v)
-                         (cdr vec))
-                   (cdr v))))
+        (bveq
+            (bvor (cdr v)
+                  (cdr vec))
+            (cdr v)))
 
     (define (pred vec)
         (define (count v res)
