@@ -2,16 +2,17 @@
 
 (provide
     (contract-out
-        [pipeline (-> (-> syntax?
-                          (stream/c syntax?))
-                      syntax?
+        [pipeline (-> (stream/c syntax?)
                       (listof syntax?)
                       matrix?)]))
 
 (require "../utils/utilities.rkt"
          racket/stream)
 
-(define (check p t)
+(define/contract (check p t)
+    (-> syntax?
+        (listof syntax?)
+        natural?)
     (eval
         #`(begin
             (require rackunit)
@@ -25,7 +26,10 @@
                 0 (test-suite "" #,@t)))))
 
 
-(define (split v)
+(define/contract (split v)
+    (-> (listof natural?)
+        (cons/c (listof natural?)
+                (listof natural?)))
     (define (get n)
         (call-with-values
             (thunk (q/r n 2))
@@ -38,7 +42,10 @@
           (map cdr res)))
 
 
-(define (convert rem num)
+(define/contract (convert rem num)
+    (-> (listof natural?)
+        natural?
+        bv?)
     (define (inner l)
         (cond
             [(empty? l) 0]
@@ -53,7 +60,10 @@
     (bv (inner rem) num))
 
 
-(define (build vs num)
+(define/contract (build vs num)
+    (-> (listof natural?)
+        natural?
+        (listof bv?))
     (define len (length vs))
 
     ; use stream instead
@@ -74,18 +84,17 @@
     (inner vs '() num))
 
 
-(define (pipeline eng prog suite)
-    (define muts
+(define (pipeline muts suite)
+    (define count
         (map
             (λ (p)
                 (check p suite))
-            (stream->list
-                (eng prog))))
+            (stream->list muts)))
 
     (define vecs
         (reverse
             (build
-                muts
+                count
                 (length suite))))
 
     (define data
@@ -94,4 +103,4 @@
              vecs))
 
     (matrix data
-            (length muts)))
+            (length count)))
