@@ -22,7 +22,7 @@
                      (listof bv?))]
         [collect (-> matrix? bv?)]))
 
-(define row?  (cons/c natural? bv?))
+(define row?  (cons/c syntax? bv?))
 (define data? (listof row?))
 
 
@@ -30,8 +30,7 @@
     (-> natural? contract?)
     (listof
         (cons/c
-            (and/c natural?
-                   (<=/c len))
+            syntax?
             (bitvector len))))
 
 
