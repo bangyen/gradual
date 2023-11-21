@@ -1,5 +1,7 @@
 #lang rosette
 
+(require racket/struct)
+
 (provide
     (contract-out
         [row?    contract?]
@@ -35,6 +37,18 @@
 
 
 (struct matrix (data len)
+    #:methods gen:custom-write
+    [(define write-proc
+        (make-constructor-style-printer
+            (λ (obj) 'matrix)
+            (λ (obj)
+                (map
+                    (λ (p)
+                        (cons
+                            (syntax->datum
+                                (car p))
+                            (cdr p)))
+                    (matrix-data obj)))))]
     #:guard (λ (data len name)
                 (unless (natural? len)
                     (error "invalid width"))
