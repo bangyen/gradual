@@ -1,20 +1,29 @@
 #lang rosette
 
-(require "../utils/utilities.rkt"
-         "../utils/predicates.rkt"
-         "recurse.rkt")
-
 (provide
     (contract-out
         [greedy (-> matrix? split?)]))
 
-(define-syntax-rule
-    (pred-select expr ...)
-        #`(begin
-            (define
-                (proc data vec)
-                expr ...)
-            (recurse mat proc)))
+(require racket/stxparam
+         "../utils/utilities.rkt"
+         "../utils/predicates.rkt"
+         "recurse.rkt")
+
+(define-syntax-parameter data (syntax-rules ()))
+(define-syntax-parameter vec  (syntax-rules ()))
+(define-syntax-parameter mat  (syntax-rules ()))
+
+(define-syntax select
+    (syntax-rules ()
+        [(select expr ...)
+         (begin
+             (define (proc __data __vec)
+                 (syntax-parameterize
+                         ([data (syntax-id-rules () [_ __data])]
+                          [vec  (syntax-id-rules () [_ __vec ])])
+                     expr ...))
+             (recurse (syntax-local-value #'mat)
+                      proc))]))
 
 (define/contract (mask row vec)
     (-> row? bv?
@@ -49,7 +58,7 @@
 
 
 (define (ge mat)
-    (pred-select
+    (select
         (if (bvzero? vec)
             (essential? mat 1)
             (highest data vec))))
@@ -63,7 +72,7 @@
                     mat)
                 mat)))
 
-    (pred-select
+    (select
         (if (bvzero? vec)
             (essential? mat 1)
             (highest data vec))))
@@ -73,7 +82,7 @@
     (define len
         (matrix-len mat))
 
-    (pred-select
+    (select
         (define (lowest v res)
             (min (count data v)
                  res))
