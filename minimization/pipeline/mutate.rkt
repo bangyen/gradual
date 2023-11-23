@@ -27,80 +27,84 @@
 
 
 (define/contract (split v)
-    (-> (listof natural?)
-        (cons/c (listof natural?)
-                (listof natural?)))
+    (-> (stream/c natural?)
+        (cons/c (stream/c natural?)
+                (stream/c natural?)))
     (define (get n)
         (call-with-values
             (thunk (q/r n 2))
             cons))
 
     (define q/r quotient/remainder)
-    (define res (map get v))
+    (define res (stream-map get v))
 
-    (cons (map car res)
-          (map cdr res)))
+    (cons (stream-map car res)
+          (stream-map cdr res)))
 
 
-(define/contract (convert rem num)
-    (-> (listof natural?)
-        natural?
+(define/contract (convert rem)
+    (-> (stream/c natural?)
         bv?)
-    (define (inner l)
-        (cond
-            [(empty? l) 0]
-            [else
-                (match-define
-                    (cons f r) l)
-                (define res
-                    (inner r))
+    (define (add res next)
+        (match-define
+            (list old num)
+            res)
 
-                (+ f (* 2 res))]))
+        (list
+            (+ next
+               (* 2 old))
+            (add1 num)))
 
-    (bv (inner rem) num))
+    (apply bv
+           (stream-fold
+               add
+               '(0 0)
+               rem)))
 
 
 (define/contract (build vs num)
-    (-> (listof natural?)
+    (-> (stream/c natural?)
         natural?
-        (listof bv?))
-    (define len (length vs))
+        (stream/c bv?))
 
-    ; use stream instead
     (define (inner v r n)
         (cond
             [(> n 0)
              (match-define
                 (cons a b)
                 (split v))
-            (define vec
-                (convert b len))
+
+             (define new
+                 (stream
+                     (convert b)))
 
              (inner a
-                    (cons vec r)
+                    (stream-append
+                        r new)
                     (sub1 n))]
             [else r]))
 
-    (inner vs '() num))
+    (inner vs empty-stream num))
 
 
 (define (pipeline muts suite)
     (define count
-        (map
+        (stream-map
             (λ (p)
                 (check p suite))
-            (stream->list muts)))
+            muts))
 
     (define vecs
-        (reverse
             (build
                 count
-                (length suite))))
+                (length suite)))
 
     (define data
-        (map cons
-             suite
-             vecs))
+        (for/list
+                ([s suite]
+                 [v vecs ])
+            (cons s v)))
 
     (matrix data
-            (length count)))
+            (stream-length
+                count)))
