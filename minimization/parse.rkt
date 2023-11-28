@@ -4,7 +4,9 @@
 
 (read-accept-reader #t)
 
-(define (collect stx)
+(define/contract (collect stx)
+    (-> syntax?
+        (listof syntax?))
     (define sub
         (syntax->list stx))
 
@@ -34,15 +36,52 @@
                   (map collect
                        sub))])]))
 
-(define file
-    (open-input-file
-        "../../benchmarks/benchmarks/zombie/tests/test-all.rkt"))
 
-(current-input-port file)
+(define/contract (open path)
+    (-> path?
+        (listof syntax?))
+    (define file
+        (open-input-file path))
 
-(define stx (read-syntax))
-(pretty-print
+    (current-input-port file)
+
+    (define stx (read-syntax))
+    (define res (collect stx))
+
+    (close-input-port file)
+
+    res)
+
+
+(define/contract (traverse bench)
+    (-> string?
+        (listof syntax?))
+    (define path
+        (string-append
+            "../../benchmarks/"
+            "benchmarks/"
+            bench
+            "/tests"))
+
+    (define files
+        (directory-list
+            path
+            #:build? #t))
+
+    (apply
+        append
+        (map open
+             files)))
+
+
+(define bench
+    (command-line
+        #:args (b) b))
+
+(define tests
+    (traverse bench))
+
+(length tests)
+#; (pretty-print
     (map syntax->datum
-         (collect stx)))
-
-(close-input-port file)
+         tests))
