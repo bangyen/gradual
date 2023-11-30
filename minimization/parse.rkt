@@ -44,13 +44,10 @@
         (open-input-file path))
 
     (current-input-port file)
-
     (define stx (read-syntax))
-    (define res (collect stx))
-
     (close-input-port file)
 
-    res)
+    (collect stx))
 
 
 (define/contract (traverse bench)
