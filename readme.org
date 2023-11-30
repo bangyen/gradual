@@ -1,0 +1,192 @@
+* blame-evaluation-gt
+This repo houses the infrastructure implementation for rational programmer experiments.
+
+* Installation
+
+** on Linux
+Clone this repo.
+/Suggestion/: create a new directory and clone it in there.
+
+After cloning, run
+: blame-evaluation-gt/bex/setup/install-racket-and-setup.sh
+with two arguments:
+1. The "project root".
+   Typically, this should be the parent directory into which you cloned this repo.
+2. A setup config, typically one of =blame-evaluation-gt/bex/setup/*-setup-config.rkt=.
+
+This setup script will
+1. Download and set up a fresh copy of racket dedicated for running the experiment in the "project root",
+2. Download, install, and set up the experiment dependencies in the "project root",
+3. Check the installation setup, and
+4. Ask if you want to run the experiment tests.
+
+If you answer yes to run the tests, and they all pass, then you should be all set up to run experiments.
+
+* Structure
+The repository is structured into two packages, each in a subdirectory
+- bex
+- bex-data-analysis
+
+The =bex= package (short for Blame EXperiment) contains the full experiment implementation and associated programs.
+The =bex-data-analysis= package has analysis and visualization tools for the experimental data.
+
+** bex
+The top level entry point of the infrastructure, implementing the experiment, is at
+: bex/experiment/mutant-factory.rkt
+This module expects a variety of commandline arguments configuring how to run the experiment.
+Run it with =-h= to see them all.
+
+There are three salient pieces to point out about this implementation:
+1. it is highly parallel; it can use (practically) as many cores as you have available, and there's no practically-reachable limit at which it's not productive to use more. It runs thousands (or millions) of essentially independent processes.
+2. it is interruptable (with the =progress-log= flags), so it can be killed and resumed at any time with minimal loss of progress.
+3. it is configurable, with an extensive set of configurable features that change how the experiment works or what it does.
+
+
+Configuration is done via a mandatory configuration file that selects implementations of various configurable features.
+The features that can be configured, and the implementations available for each, are described in
+: bex/configurables/configurables.rkt
+Typically, a config file must select an implementation for all of the configurable features there.
+
+A set of pre-defined configurations, used by previous experiments, are in the directories
+: bex/configurables/{bltym-configs,blutil-configs}
+
+To read more about the configuration system (e.g. to understand how to add a new configurable feature, or to add a new implementation) refer to the [[https://docs.racket-lang.org/configurable/index.html][configurable library documentation]].
+
+The rest of the package implements various components in support of the main experiment, or programs for experimental setup or orchestration.
+
+** The structure of an experiment in abstract terms
+At a high level, an experiment abstractly consists of
+1. starting from a set of seed programs ([[https://docs.racket-lang.org/gtp-benchmarks/index.html][the GTP benchmarks]]),
+2. mutating the seed programs to obtain a large population of potentially-buggy versions (mutants),
+3. filtering the mutant population to obtain a subset of interest (interesting mutants),
+4. sampling configurations from the configuration lattice (each configuration serves as a debugging scenario),
+5. running the experiment with a given semantics and algorithm for responding to information (a mode),
+6. repeating for all modes of interest,
+7. analyzing the resulting data to compare modes
+
+
+- [[file:bex/experiment/mutant-factory.rkt][bex/experiment/mutant-factory.rkt]] primarily implements step 5, but with certain configurations can perform steps 1-4 as well.
+- [[file:bex/orchestration/setup-all-dbs.rkt][bex/orchestration/setup-all-dbs.rkt]] implements the more standard approach for steps 1-4.
+- [[file:bex/orchestration/orchestrate-experiment.rkt][bex/orchestration/orchestrate-experiment.rkt]] implements step 6.
+- [[file:bex-data-analysis][bex-data-analysis]] contains various programs for step 7 (see its own readme for more details).
+
+* How to set up and run an experiment
+The setup necessary to run an experiment depends on the configuration of the experiment that you want to run.
+Some choices of configuration require no setup at all (besides writing the configuration file itself), while others involve pre-generating databases that guide the experiment when it runs.
+
+The latest incarnations of the experiment involve testing multiple modes -- which correspond to different configurations of the experiment.
+In order to create comparable results across these runs of the experiment, each run needs to test the same set of debugging scenarios.
+To support that, there's a process to generate and select those debugging scenarios, and then save them in a database on disk so that the experiment when run can simply pull the scenarios from the database.
+Every run of the experiment (for each mode) will pull from the same database and thus test the same set of debugging scenarios.
+See the following two subsections for an overview of all the databases involved.
+
+The workflow for setting up the full set of databases storing debugging scenarios and the other minor things is captured by a database setup script located in =bex/orchestration/db-setup/=.
+See the reference scripts described below.
+
+Once these databases are set up the options for running the experiment are described in the last subsection below.
+
+** Databases used by the experiment
+*** mutant-samples
+This database stores a selection of mutant IDs per benchmark that the experiment will test.
+
+*** pre-selected-bt-roots
+Stores a selection of program/lattice configurations per mutant that the experiment will test.
+
+*** (for gradual typing experiments) pre-computed-mutant-results
+Stores pre-computed results of the fully-untyped benchmark to optimize Erasure modes, since all program/lattice configurations of a program produce the same result; this makes it only necessary to typecheck the program, instead of typechecking /and/ running.
+
+** Supporting/intermediate databases that may be created in the process of generating the main ones
+
+*** type-err-summaries : mutant type error info
+Records which mutants have type errors -- i.e. mutations detectable by the type checker -- and the mutators that create them.
+
+This is important to exclude mutants that do not have type errors, because such mutants may not have a bug at all, or it may be one that Typed Racket's type system can't help with.
+In either case, such mutants would only add noise to the resulting data.
+
+*** dyn-err-summaries : mutant dynamic error info
+Records which mutants have dynamic errors -- i.e. mutations that cause the program to crash.
+This database is usually a subset of the type error summaries.
+
+The purpose here is again to filter out mutants that do not have bugs of interest.
+In particular, it may be that a mutant is ill-typed but not actually buggy (because the type system is conservative, it rejects some correct programs).
+
+*** interesting-scenarios / interesting-mutants : more info about what mutants and program/lattice configurations are interesting
+Records which mutants and program/lattice configurations are interesting according to yet more metrics.
+See =find-interesting-scenarios.rkt= for details; the interesting mutants DB is constructed by summarizing information in the interesting scenarios DB.
+
+** Database setup scripts employed in all of the experiments so far
+The database setup process for all of the experiments so far are reified in the following db setup scripts.
+Running these scripts will set up all the databases necessary for the corresponding experiments.
+
+- [[file:bex/orchestration/db-setup/bltym.rkt][bex/orchestration/db-setup/bltym.rkt]] :: For the experiment in the paper "How to Evaluate Blame for Gradual Types, Part 2"
+- [[file:bex/orchestration/db-setup/bltym-repro.rkt][bex/orchestration/db-setup/bltym-repro.rkt]] :: For the thesis-reproduction of the above experiment.
+
+- [[file:bex/orchestration/db-setup/blgt.rkt][bex/orchestration/db-setup/blgt.rkt]] :: For the experiment in the paper "How to Evaluate Blame for Gradual Types"
+- [[file:bex/orchestration/db-setup/blgt-repro.rkt][bex/orchestration/db-setup/blgt-repro.rkt]] :: For the thesis-reproduction of the above experiment.
+
+- [[file:bex/orchestration/db-setup/blutil.rkt][bex/orchestration/db-setup/blutil.rkt]] :: For the thesis-reproduction of the experiment in the paper "Does Blame Shifting Work?"
+
+**Important**: Note that these database setup scripts are intricately linked with the experiment config files they reference in =bex/configurables/=.
+If you want to create your own, or to modify an existing one, be sure to look over and change the referenced configs as necessary!
+See the section below on [[*Experiment configs][experiment configs]].
+
+** Running the experiment
+There are two options for running the experiment:
+
+*** A single benchmark and mode
+To run the experiment for a single benchmark and mode, you can run [[file:bex/experiment/mutant-factory.rkt][bex/experiment/mutant-factory.rkt]] with the appropriate flags (again see =-h/--help=).
+
+The experiment has pretty extensive logging of what it is doing, so it may also be useful to ask Racket to print those logs as it runs.
+To do that, run the mutant factory like this:
+: ./racket/bin/racket -O info@factory bex/experiment/mutant-factory.rkt <flags ...>
+
+*** The full shebang with =orchestrate-experiment.rkt=
+To run the whole experiment, for as many modes as needed:
+1. Make a copy of or modify [[file:bex/orchestration/orchestrate-experiment.rkt][bex/orchestration/orchestrate-experiment.rkt]] to create an experiment orchestration program.
+   This program is written in a tiny embedded DSL for describing experiment orchestration plans.
+2. Modify [[file:~/github_sync/grad/projects/blame-gradual-typing/src/blame-evaluation-gt/bex/orchestration/experiment-info.rkt][bex/orchestration/experiment-info.rkt]] as necessary.
+3. Run your version of =orchestrate-experiment.rkt=.
+
+The DSL for experiment orchestration consists primarily of two forms.
+
+=with-configuration= declares a whole-experiment orchestration plan.
+It's first argument is a pair of
+1. a host on which to run the experiment (referring to one of the hosts defined in [[file:~/github_sync/grad/projects/blame-gradual-typing/src/blame-evaluation-gt/bex/orchestration/experiment-manager.rkt][bex/orchestration/experiment-manager.rkt]]), and
+2. an orchestration config (typically defined in =experiment-info.rkt=, which see for the definition of that config to understand its parts).
+
+The next arguments are options to configure the orchestration, see the subsection below for details.
+
+The remaining arguments consist of =run-mode= forms describing which modes to run for the enclosing experiment.
+Each mode is declared like this
+: (run-mode TR)
+which means that every benchmark in =experiment-benchmarks= (which is defined in =experiment-info.rkt=) will be run using the experiment config located at =bex/configurables/configs/TR.rkt=.
+
+If you don't want to run all benchmarks, you can write something like this instead
+: (run-mode TR #:only kcfa sieve tetris)
+
+Everything outside of =with-configuration= is regular racket code.
+
+**** Hosts
+The host actually encapsulates both a host on which to run the experiment, and details about /how/ to run it.
+The options are defined in [[file:~/github_sync/grad/projects/blame-gradual-typing/src/blame-evaluation-gt/bex/orchestration/experiment-manager.rkt][bex/orchestration/experiment-manager.rkt]] above =main= (the =hosts= and related definitions).
+A good host for just trying things out is =local=.
+
+Depending on your particular needs the details of how the hosts are configured may need to be tweaked.
+You can either edit =experiment-manager.rkt= to make such tweaks, or mutate the corresponding fields before =with-configuration= in the orchestration program.
+The only drawback to the latter choice is that the tweaks will not be visible if you try to use =bex/orchestration/experiment-manager.rkt= for some manual experiment control.
+
+**** Options
+=with-configuration= also accepts a few options:
+- =#:status-in <path>= - a file in which to periodically store/update the current experiment status
+- =#:skip-setup= - skip uploading/installing databases, checking that everything is up-to-date, recompiling, and so on before launching.
+  /Only use this option if you are certain you want it!/
+- =#:manual-outcome-recording= - do not automatically manage sanity spot-checks while running the experiment.
+  /If using this option, you should either specify =#:record-outcomes= in your first =run-mode= clause, or be sure you know what you're doing!/
+
+* TODO Experiment configs
+Check out the [[https://docs.racket-lang.org/configurable/index.html][configurable library documentation]] for an overview of the system by which the experiment can be configured.
+
+See =bex/configurables/configurables.rkt=, the configurable feature set definition for the experiment, for an overview of all the configurable options.
+Refer to e.g. =bex/configurables/bltym-configs/TR.rkt= for an example experiment config, which selects particular implementations for each configurable option described by =configurables.rkt=.
+
+
