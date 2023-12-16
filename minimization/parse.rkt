@@ -1,40 +1,46 @@
 #lang racket
 
 (require racket/string)
+(provide branch first traverse)
 
 (read-accept-reader #t)
 
-(define/contract (collect stx)
-    (-> syntax?
-        (listof syntax?))
+(define (branch stx true false)
     (define sub
         (syntax->list stx))
 
     (cond
         [(or (false? sub)
              (empty? sub))
-         '()]
+         (false sub)]
         [sub
-         (define id (car sub))
+         (true  sub)]))
 
-         (define res
-             (cond
-                 [(identifier? id)
-                  (define str
-                      (symbol->string
-                          (syntax-e id)))
+(define (first sub func)
+    (define id (car sub))
 
-                  (string-contains?
-                      str "check")]
-                 [else #f]))
+    (cond
+        [(identifier? id)
+         (define str
+             (symbol->string
+                 (syntax-e id)))
 
-         (cond
-             [res (list stx)]
-             [else
-              (apply
-                  append
-                  (map collect
-                       sub))])]))
+         (string-contains?
+             str func)]
+        [else #f]))
+
+(define/contract (collect stx)
+    (-> syntax?
+        (listof syntax?))
+    (define (check sub)
+        (if (first sub "check")
+            (list stx)
+            (apply
+                append
+                (map collect
+                     sub))))
+
+    (branch stx check (λ (s) '())))
 
 
 (define/contract (open path)
@@ -71,14 +77,14 @@
              files)))
 
 
-(define bench
-    (command-line
-        #:args (b) b))
+(begin
+    (define bench
+        (command-line
+            #:args (b) b))
 
-(define tests
-    (traverse bench))
+    (define tests
+        (traverse bench))
 
-(length tests)
-#; (pretty-print
-    (map syntax->datum
-         tests))
+    (pretty-print
+        (map syntax->datum
+             tests)))
