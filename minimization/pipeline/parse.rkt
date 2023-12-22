@@ -25,7 +25,7 @@
              (symbol->string
                  (syntax-e id)))
 
-         (string-contains?
+         (string-prefix?
              str func)]
         [else #f]))
 
@@ -77,7 +77,7 @@
              files)))
 
 
-(begin
+#; (begin
     (define bench
         (command-line
             #:args (b) b))
