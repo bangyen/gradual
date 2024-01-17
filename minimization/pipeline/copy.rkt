@@ -1,5 +1,8 @@
 #lang racket
 
+(provide display-dir
+         delete-dir
+         wrap)
 (require racket/path
          (for-syntax syntax/parse))
 
@@ -86,7 +89,7 @@
 
             (define file (car dir))
 
-            (show out
+            (hide out
                 (string-replace
                     (path->string
                         (build-path
@@ -125,9 +128,9 @@
     (define shared
         (build fin))
 
-    (make-dir shared)
-
     (define (inner config)
+        (delete-dir shared)
+        (make-dir   shared)
         (combine
             (build one)
             (build two)
@@ -159,16 +162,7 @@
     name)
 
 
-(begin
-    (define src  "../../../benchmarks/benchmarks/zombie/")
-    (define fold (list "base" "both" "untyped" "typed"))
-    (define dest "folder/")
-
-    (define config
-        (command-line
-            #:args (c)
-            (string->number c)))
-
+(define (wrap src fold dest)
     (delete-dir dest)
     (make-dir   dest)
 
@@ -178,13 +172,27 @@
                src dest s))
         fold)
 
+    (setup
+        dest
+        "typed"
+        "untyped"
+        "both"
+        #; "shared"))
+
+
+#; (begin
+    (define src  "../../../benchmarks/benchmarks/zombie/")
+    (define fold '("base" "both" "untyped" "typed"))
+    (define dest "config")
+
+    (define config
+        (command-line
+            #:args (c)
+            (string->number c)))
+
     (define proc
-        (setup
-            dest
-            "typed"
-            "untyped"
-            "shared"))
+        (wrap src fold dest))
 
     (proc config)
     (display-dir dest)
-    (elete-dir   dest))
+    (delete-dir  dest))
