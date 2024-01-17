@@ -1,20 +1,20 @@
 #lang racket
 
 (require racket/string)
-(provide branch first traverse)
+(provide branch first traverse open)
 
 (read-accept-reader #t)
 
-(define (branch stx true false)
+(define (branch stx func value)
     (define sub
         (syntax->list stx))
 
     (cond
         [(or (false? sub)
              (empty? sub))
-         (false sub)]
+         value]
         [sub
-         (true  sub)]))
+         (func sub)]))
 
 (define (first sub func)
     (define id (car sub))
@@ -40,12 +40,12 @@
                 (map collect
                      sub))))
 
-    (branch stx check (λ (s) '())))
+    (branch stx check '()))
 
 
 (define/contract (open path)
     (-> path?
-        (listof syntax?))
+        syntax?)
     (define file
         (open-input-file path))
 
@@ -53,7 +53,7 @@
     (define stx (read-syntax))
     (close-input-port file)
 
-    (collect stx))
+    stx)
 
 
 (define/contract (traverse bench)
@@ -61,10 +61,7 @@
         (listof syntax?))
     (define path
         (string-append
-            "../../benchmarks/"
-            "benchmarks/"
-            bench
-            "/tests"))
+            bench "/tests"))
 
     (define files
         (directory-list
@@ -73,7 +70,9 @@
 
     (apply
         append
-        (map open
+        (map (λ (s)
+                (collect
+                    (open s)))
              files)))
 
 
