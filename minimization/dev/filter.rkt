@@ -1,89 +1,96 @@
 #lang racket
 
-(require "../pipeline/parse.rkt")
-
-(define (update pair head [tail #f])
-    (match-define
-        (cons lst acc)
-        pair)
-
-    (define new
-        (if (false? tail)
-            acc tail))
-
-    (cons (cons head lst)
-          new))
+(require racket/function
+         "../pipeline/parse.rkt")
 
 
-(define (combine arr func)
-    (define res
-        (foldl
-            func
-            (cons '() acc)
-            (reverse arr)))
-
-    (cons #`#,(car res)
-          (cdr res)))
-
-
-(define (check new res checks)
-    (match-define
-        (cons lst cur) res)
-
-    (define app
-        (if (ormap
-                (=/c cur)
-                checks)
-            (cons new lst)
-            lst))
-
-    (cons app
-          (add1 cur)))
+(struct state (checks acc))
 
 
 (define (suite? stx)
-    (define (inner arr)
-        (not
-            (first
-                arr
-                "test-suite")))
+    (define comp
+        (compose
+            negate
+            curryr))
 
-    (branch stx
-            inner
-            #f))
+    (define inner
+        (comp
+            first
+            "test-suite"))
+
+    (branch stx inner #f))
 
 
-(define (suites sub acc checks)
-    (define (unwrap stx res)
-        (lists stx
-               (cdr res)
-               checks))
+(define (combine arr str func)
+    (match-define
+        (cons stx res)
+        (foldr
+            (wrap func)
+            (cons '() str)
+            arr))
 
-    (define (select stx res)
-        (define (inner new)
-            (check new res checks))
+    (cons #`#,stx res))
 
-        (branch
-            stx inner
-            (update res stx)))
+
+(define (wrap func)
+    (define (inner stx res)
+        (match-define
+            (cons lst str)
+            res)
+
+        (match-define
+            (cons new alt)
+            (if (syntax->list stx)
+                (func stx str)
+                (cons stx str)))
+
+        (cons
+            (cons new lst)
+            alt))
+
+    inner)
+
+
+(define (check stx str)
+    (match-define
+        (state chk acc) str)
+
+    (match-define
+        (cons  one two) chk)
+
+    (define-values
+        (arr alt)
+        (if (= one acc)
+            (values #'(void) two)
+            (values stx      chk)))
+
+    (define str
+        (state
+            alt
+            (add1 acc)))
+
+    (cons arr str))
+
+
+(define (suites stx str)
+    (define sub
+        (syntax->list stx))
+
+    (define comb
+        (curry
+            combine
+            sub
+            str))
 
     (if (and (first sub "test-suite")
              (ormap suite? sub))
-        (combine sub select)
-        (combine sub unwrap)))
+        (comb check)
+        (comb suites)))
 
 
-(define (lists stx acc checks)
-    (define (mutual s)
-        (suites s acc checks))
+(define (init stx [chk '()])
+    (define lst (sort   chk   <))
+    (define str (state  lst   0))
+    (define res (suites stx str))
 
-    (define (unwrap stx res)
-        (match-define
-            (cons new inc)
-            (branch stx
-                    mutual
-                    stx))
-
-        (update res new inc))
-
-    unwrap)
+    (car res))
