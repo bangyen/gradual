@@ -9,10 +9,12 @@
         [data?   contract?]
         [struct  matrix
                  ((data data?)
+                  (del  sorted?)
                   (len  natural?))]
         [struct  split
                  ((in  data?)
                   (out data?)
+                  (del sorted?)
                   (len natural?))]
         [scar    (-> split? matrix?)]
         [scdr    (-> split? matrix?)]
@@ -69,7 +71,7 @@
 
 
 (struct split (in out del len)
-    #:guard (λ (in out len name)
+    #:guard (λ (in out del len name)
                 (unless (natural? len)
                     (error "invalid width"))
                 (unless ((valid? len) in)
