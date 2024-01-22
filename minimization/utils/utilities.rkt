@@ -16,11 +16,12 @@
                   (out data?)
                   (del sorted?)
                   (len natural?))]
-        [scar    (-> split? matrix?)]
-        [scdr    (-> split? matrix?)]
+        [pick    (->* (split?)
+                      (boolean?)
+                      matrix?)]
         [divide  (-> (-> row? boolean?)
-                    matrix?
-                    split?)]
+                     matrix?
+                     split?)]
         [count   (-> natural?
                      natural?)]
         [pow     (-> natural?
@@ -40,25 +41,20 @@
 
 
 (define (sorted? lst)
-    (and (listof natural?)
-         (apply < lst)))
+    (and ((listof natural?) lst)
+         (or (< (length lst) 2)
+             (apply < lst))))
 
 
 (struct matrix (data del len)
-    #; (
     #:methods gen:custom-write
     [(define write-proc
         (make-constructor-style-printer
             (λ (obj) 'matrix)
             (λ (obj)
-                (map
-                    (λ (p)
-                        (cons
-                            (syntax->datum
-                                (car p))
-                            (cdr p)))
+                (list
+                    (matrix-del  obj)
                     (matrix-data obj)))))]
-    )
     #:guard (λ (data del len name)
                 (unless (natural? len)
                     (error "invalid width"))
@@ -84,39 +80,32 @@
                 (values in out del len)))
 
 
-(define (pick func)
-    (define (inner spl)
-        (define res (func      spl))
-        (define del (split-del spl))
-        (define len (split-len spl))
+(define (pick spl [first #t])
+    (match-define
+        (split in out del len)
+        spl)
 
-        (define com
-            (combine del res))
+    (define res (if first in  out))
+    (define alt (if first out in))
+    (define num (map car alt))
 
-        (matrix res com len))
-
-    inner)
-
-
-(define scar (pick split-in))
-(define scdr (pick split-out))
-
-
-(define (combine del lst)
     (define comp
         (compose
-            sort
+            (curryr
+                sort <)
             (curry
                 append
-                lst)))
+                num)))
 
-    (comp del))
+    (matrix
+        res
+        (comp del)
+        len))
 
 
-(define (divide pred mat [bool #t])
-    (define data (matrix-data mat))
-    (define del  (matrix-del  mat))
-    (define len  (matrix-len  mat))
+(define (divide pred mat)
+    (match-define
+        (matrix data del len) mat)
 
     (define true  (filter     pred data))
     (define false (filter-not pred data))
@@ -125,8 +114,9 @@
 
 
 (define (collect mat)
-    (define data (matrix-data mat))
-    (define len  (matrix-len  mat))
+    (match-define
+        (matrix data _ len) mat)
+
     (define vecs (map cdr data))
 
     (if (null? vecs)
