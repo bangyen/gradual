@@ -31,13 +31,13 @@
 
     (define (inner spl val)
         (match-define
-            (split in out len)
+            (split in out del len)
             spl)
 
         (case (bveq val old)
             [(#f)
              (match-define (cons fst rst) out)
-             (inner (split (cons fst  in) rst len)
+             (inner (split (cons fst  in) rst del len)
                     (bvor  (cdr  fst    ) val))]
             [(#t) spl]))
 
@@ -72,26 +72,28 @@
         (match res
             [(choice value new old)
              (match-define
-                 (split in1 out1 len)
+                 (split in1 out1 del len)
                  value)
 
              (match-define
-                 (split in2 out2 _)
+                 (split in2 out2 _ _)
                  (divide (proc out1 new)
                          (matrix out1
+                                 del
                                  len)))
 
-             (define alt (matrix in2 len))
+             (define alt (matrix in2 del len))
              (define vec (collect alt))
              (define cmb (bvor vec new))
 
              (if (bveq cmb old)
                  (incr (choice (split in1
                                       in2
+                                      del
                                       len)
                                new old))
                  (choice (split (append in2 in1)
-                                out2 len)
+                                out2 del len)
                          cmb
                          old))]
             [else res]))
@@ -100,11 +102,13 @@
 
 
 (define (recurse mat proc)
-    (define data (matrix-data mat))
-    (define len  (matrix-len  mat))
+    (match-define
+        (matrix data del len) mat)
 
     (fold (update proc)
           (choice
-              (split '() data len)
+              (split
+                  '() data
+                  del len)
               (bv 0 len)
               (collect mat))))

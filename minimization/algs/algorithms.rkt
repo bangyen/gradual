@@ -66,7 +66,7 @@
 
 (define (gre mat)
     (define new
-        (scar
+        (pick
             (divide
                 (redundant?
                     mat)
