@@ -58,7 +58,10 @@
             [num   0])
         (cond
             [(null? full)
-             (values in out)]
+             (define rev
+                 (reverse out))
+
+             (values in rev)]
             [else
              (match-define
                  (cons head1 tail1)
@@ -72,7 +75,7 @@
              (cond
                  [(null? part)
                   (define val
-                      (cons head1 out))
+                      (cons num out))
 
                   (next '() in val)]
                  [else
@@ -80,18 +83,14 @@
                       (cons head2 tail2)
                       part)
 
-                  (define-values
-                      (in2 out2)
-                      (cond
-                          [(= head1 head2)
-                           (define new (cons num   head1))
-                           (define app (cons new   in))
-                           (values app out)]
-                          [else
-                           (define app (cons head1 out))
-                           (values in  app)]))
-
-                  (next tail2 in2 out2)])]))
+                  (cond
+                      [(= head1 head2)
+                       (define new (cons num head1))
+                       (define app (cons new in))
+                       (next tail2 app out)]
+                      [else
+                       (define app (cons num out))
+                       (next part  in  app)])])]))
 
     (inner p f))
 
