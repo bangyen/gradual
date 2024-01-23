@@ -86,16 +86,23 @@
              (define vec (collect alt))
              (define cmb (bvor vec new))
 
-             (if (bveq cmb old)
-                 (incr (choice (split in1
-                                      in2
-                                      del
-                                      len)
-                               new old))
-                 (choice (split (append in2 in1)
-                                out2 del len)
-                         cmb
-                         old))]
+             (cond
+                 [(bveq cmb old)
+                  (define spl (split  in1 in2 del len))
+                  (define chc (choice spl new old))
+
+                  (match-define
+                      (choice val _ _) (incr chc))
+                  (match-define
+                      (split in3 out3 __ __) val)
+
+                  (define app (append out3 out2))
+                  (define alt (split in3 app del len))
+                  (choice alt old old)]
+                 [else
+                  (define app (append in2 in1))
+                  (define spl (split  app out2 del len))
+                  (choice spl cmb old)])]
             [else res]))
 
     inner)
