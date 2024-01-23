@@ -50,29 +50,64 @@
             del len))
 
 
+(define (label p f)
+    (define (inner
+            part full
+            [in  '()]
+            [out '()]
+            [num   0])
+        (cond
+            [(null? full)
+             (values in out)]
+            [else
+             (match-define
+                 (cons head1 tail1)
+                 full)
+
+             (define (next p i o)
+                 (inner
+                     p tail1 i o
+                     (add1 num)))
+
+             (cond
+                 [(null? part)
+                  (define val
+                      (cons head1 out))
+
+                  (next '() in val)]
+                 [else
+                  (match-define
+                      (cons head2 tail2)
+                      part)
+
+                  (define-values
+                      (in2 out2)
+                      (cond
+                          [(= head1 head2)
+                           (define new (cons num   head1))
+                           (define app (cons new   in))
+                           (values app out)]
+                          [else
+                           (define app (cons head1 out))
+                           (values in  app)]))
+
+                  (next tail2 in2 out2)])]))
+
+    (inner p f))
+
+
 (define/contract (gen . data)
     (->* () ()
          #:rest (listof natural?)
          matrix?)
-    (define full '(#b11 #b10 #b01))
-    (define ind  '(0 1 2))
-    (define len  2)
+    (define full
+        '(#b11 #b11 #b10 #b01))
 
-    (define (create val)
-        (cons (index-of full val)
-              (bv val len)))
+    (define-values
+        (in out)
+        (label data full))
 
-    (define (find ind)
-        (define val
-            (list-ref
-                full ind))
-
-        (member val data))
-
-    (matrix
-        (map create data)
-        (filter-not find ind)
-        len))
+    (generate in out 2))
 
 
 (test-case
