@@ -58,10 +58,9 @@
             [num   0])
         (cond
             [(null? full)
-             (define rev
-                 (reverse out))
-
-             (values in rev)]
+             (values
+                 (reverse in)
+                 (reverse out))]
             [else
              (match-define
                  (cons head1 tail1)
