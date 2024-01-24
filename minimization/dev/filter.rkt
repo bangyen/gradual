@@ -1,5 +1,7 @@
 #lang racket
 
+(provide start)
+
 (require racket/function
          "../pipeline/parse.rkt")
 
@@ -55,21 +57,25 @@
     (match-define
         (state chk acc) str)
 
-    (match-define
-        (cons  one two) chk)
-
     (define-values
         (arr alt)
-        (if (= one acc)
-            (values #'(void) two)
-            (values stx      chk)))
+        (cond
+            [(null?  chk)
+             (values stx chk)]
+            [else
+             (match-define
+                 (cons  one two)  chk)
 
-    (define str
+             (if (= one acc)
+                 (values #'(void) two)
+                 (values stx      chk))]))
+
+    (define new
         (state
             alt
             (add1 acc)))
 
-    (cons arr str))
+    (cons arr new))
 
 
 (define (suites stx str)
@@ -88,7 +94,7 @@
         (comb suites)))
 
 
-(define (init stx [chk '()])
+(define (start stx [chk '()])
     (define lst (sort   chk   <))
     (define str (state  lst   0))
     (define res (suites stx str))
