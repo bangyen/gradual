@@ -92,9 +92,10 @@
                   (define chc (choice spl new old))
 
                   (match-define
-                      (choice val _ _) (incr chc))
-                  (match-define
-                      (split in3 out3 __ __) val)
+                      (choice
+                          (split in3 out3 _d _l)
+                          _ _)
+                      (incr chc))
 
                   (define app (append out3 out2))
                   (define alt (split in3 app del len))
