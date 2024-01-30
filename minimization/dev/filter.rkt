@@ -1,6 +1,6 @@
 #lang racket
 
-(provide start)
+(provide start (struct-out state))
 
 (require racket/function
          "../pipeline/parse.rkt")
@@ -9,18 +9,20 @@
 (struct state (checks acc))
 
 
-(define (suite? stx)
-    (define comp
-        (compose
-            negate
-            curryr))
+(define (func? fn)
+    (define (inner stx)
+        (define comp
+            (compose
+                negate
+                curryr))
 
-    (define inner
-        (comp
-            first
-            "test-suite"))
+        (define inner
+            (comp
+                first
+                fn))
 
-    (branch stx inner #f))
+        (branch stx inner #f))
+    inner)
 
 
 (define (combine arr str func)
@@ -57,18 +59,15 @@
     (match-define
         (state chk acc) str)
 
+    (define bool
+        (and (not (null? chk))
+             (= (car chk) acc)))
+
     (define-values
         (arr alt)
-        (cond
-            [(null?  chk)
-             (values stx chk)]
-            [else
-             (match-define
-                 (cons  one two)  chk)
-
-             (if (= one acc)
-                 (values #'(void) two)
-                 (values stx      chk))]))
+        (if bool
+            (values #'(void) (cdr chk))
+            (values stx      chk)))
 
     (define new
         (state
@@ -79,8 +78,9 @@
 
 
 (define (suites stx str)
-    (define sub
-        (syntax->list stx))
+    (define sub (syntax->list stx))
+    (define ts  "test-suite")
+    (define fn  (func? ts))
 
     (define comb
         (curry
@@ -88,8 +88,8 @@
             sub
             str))
 
-    (if (and (first sub "test-suite")
-             (ormap suite? sub))
+    (if (and (first sub ts)
+             (ormap fn sub))
         (comb check)
         (comb suites)))
 
